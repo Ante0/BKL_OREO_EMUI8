@@ -74,8 +74,8 @@
 #include "blk.h"
 #include "blk-mq.h"
 #include "blk-mq-tag.h"
-
 #include "hisi-blk-mq.h"
+
 
 /* FLUSH/FUA sequences */
 enum {
