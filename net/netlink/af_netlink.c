@@ -334,17 +334,6 @@ static void netlink_sock_destruct(struct sock *sk)
 	}
 
 	skb_queue_purge(&sk->sk_receive_queue);
-#ifdef CONFIG_NETLINK_MMAP
-	if (1) {
-		struct nl_mmap_req req;
-		memset(&req, 0, sizeof(req));
-		if (nlk->rx_ring.pg_vec)
-			__netlink_set_ring(sk, &req, false, NULL, 0);
-		memset(&req, 0, sizeof(req));
-		if (nlk->tx_ring.pg_vec)
-			__netlink_set_ring(sk, &req, true, NULL, 0);
-	}
-#endif /* CONFIG_NETLINK_MMAP */
 
 	if (!sock_flag(sk, SOCK_DEAD)) {
 		printk(KERN_ERR "Freeing alive netlink socket %p\n", sk);
