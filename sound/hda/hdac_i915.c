@@ -240,7 +240,8 @@ out_master_del:
 out_err:
 	kfree(acomp);
 	bus->audio_component = NULL;
-	dev_err(dev, "failed to add i915 component master (%d)\n", ret);
+	hdac_acomp = NULL;
+	dev_info(dev, "failed to add i915 component master (%d)\n", ret);
 
 	return ret;
 }
