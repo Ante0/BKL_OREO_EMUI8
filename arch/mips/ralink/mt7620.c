@@ -188,23 +188,39 @@ static struct rt2880_pmx_func gpio_grp_mt7628[] = {
 	FUNC("gpio", 0, 11, 1),
 };
 
-#define MT7628_GPIO_MODE_MASK	0x3
+static struct rt2880_pmx_func wled_kn_grp_mt7628[] = {
+	FUNC("rsvd", 3, 35, 1),
+	FUNC("rsvd", 2, 35, 1),
+	FUNC("gpio", 1, 35, 1),
+	FUNC("wled_kn", 0, 35, 1),
+};
 
-#define MT7628_GPIO_MODE_PWM1	30
-#define MT7628_GPIO_MODE_PWM0	28
-#define MT7628_GPIO_MODE_UART2	26
-#define MT7628_GPIO_MODE_UART1	24
-#define MT7628_GPIO_MODE_I2C	20
-#define MT7628_GPIO_MODE_REFCLK	18
-#define MT7628_GPIO_MODE_PERST	16
-#define MT7628_GPIO_MODE_WDT	14
-#define MT7628_GPIO_MODE_SPI	12
-#define MT7628_GPIO_MODE_SDMODE	10
-#define MT7628_GPIO_MODE_UART0	8
-#define MT7628_GPIO_MODE_I2S	6
-#define MT7628_GPIO_MODE_CS1	4
-#define MT7628_GPIO_MODE_SPIS	2
-#define MT7628_GPIO_MODE_GPIO	0
+static struct rt2880_pmx_func wled_an_grp_mt7628[] = {
+	FUNC("rsvd", 3, 44, 1),
+	FUNC("rsvd", 2, 44, 1),
+	FUNC("gpio", 1, 44, 1),
+	FUNC("wled_an", 0, 44, 1),
+};
+
+#define MT7628_GPIO_MODE_MASK		0x3
+
+#define MT7628_GPIO_MODE_WLED_KN	48
+#define MT7628_GPIO_MODE_WLED_AN	32
+#define MT7628_GPIO_MODE_PWM1		30
+#define MT7628_GPIO_MODE_PWM0		28
+#define MT7628_GPIO_MODE_UART2		26
+#define MT7628_GPIO_MODE_UART1		24
+#define MT7628_GPIO_MODE_I2C		20
+#define MT7628_GPIO_MODE_REFCLK		18
+#define MT7628_GPIO_MODE_PERST		16
+#define MT7628_GPIO_MODE_WDT		14
+#define MT7628_GPIO_MODE_SPI		12
+#define MT7628_GPIO_MODE_SDMODE		10
+#define MT7628_GPIO_MODE_UART0		8
+#define MT7628_GPIO_MODE_I2S		6
+#define MT7628_GPIO_MODE_CS1		4
+#define MT7628_GPIO_MODE_SPIS		2
+#define MT7628_GPIO_MODE_GPIO		0
 
 static struct rt2880_pmx_group mt7628an_pinmux_data[] = {
 	GRP_G("pwm1", pwm1_grp_mt7628, MT7628_GPIO_MODE_MASK,
