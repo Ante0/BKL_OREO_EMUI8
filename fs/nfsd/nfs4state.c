@@ -4309,6 +4309,18 @@ nfsd4_process_open2(struct svc_rqst *rqstp, struct svc_fh *current_fh, struct nf
 			goto out;
 		}
 	} else {
+		/* stp is returned locked. */
+		stp = init_open_stateid(fp, open);
+		/* See if we lost the race to some other thread */
+		if (stp->st_access_bmap != 0) {
+			status = nfs4_upgrade_open(rqstp, fp, current_fh,
+						stp, open);
+			if (status) {
+				mutex_unlock(&stp->st_mutex);
+				goto out;
+			}
+			goto upgrade_out;
+		}
 		status = nfs4_get_vfs_file(rqstp, fp, current_fh, stp, open);
 		if (status) {
 			stp->st_stid.sc_type = NFS4_CLOSED_STID;
