@@ -285,6 +285,7 @@ static int v9fs_xattr_set_acl(const struct xattr_handler *handler,
 			struct iattr iattr;
 			struct posix_acl *old_acl = acl;
 
+
 			retval = posix_acl_update_mode(inode, &iattr.ia_mode, &acl);
 			if (retval)
 				goto err_out;
