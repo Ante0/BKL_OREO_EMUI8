@@ -186,6 +186,10 @@ struct verifier_stack_elem {
 	struct verifier_stack_elem *next;
 };
 
+struct bpf_insn_aux_data {
+	enum bpf_reg_type ptr_type;	/* pointer type for load/store insns */
+};
+
 #define MAX_USED_MAPS 64 /* max number of maps accessed by one eBPF program */
 
 /* single container for all structs
@@ -200,6 +204,7 @@ struct verifier_env {
 	struct bpf_map *used_maps[MAX_USED_MAPS]; /* array of map's used by eBPF program */
 	u32 used_map_cnt;		/* number of used maps */
 	bool allow_ptr_leaks;
+	struct bpf_insn_aux_data *insn_aux_data; /* array of per-insn state */
 };
 
 /* verbose verifier prints what it's seeing
@@ -1779,7 +1784,7 @@ static int do_check(struct verifier_env *env)
 				return err;
 
 		} else if (class == BPF_LDX) {
-			enum bpf_reg_type src_reg_type;
+			enum bpf_reg_type *prev_src_type, src_reg_type;
 
 			/* check for reserved fields is already done */
 
@@ -1808,16 +1813,18 @@ static int do_check(struct verifier_env *env)
 				continue;
 			}
 
-			if (insn->imm == 0) {
+			prev_src_type = &env->insn_aux_data[insn_idx].ptr_type;
+
+			if (*prev_src_type == NOT_INIT) {
 				/* saw a valid insn
 				 * dst_reg = *(u32 *)(src_reg + off)
-				 * use reserved 'imm' field to mark this insn
+				 * save type to validate intersecting paths
 				 */
-				insn->imm = src_reg_type;
+				*prev_src_type = src_reg_type;
 
-			} else if (src_reg_type != insn->imm &&
+			} else if (src_reg_type != *prev_src_type &&
 				   (src_reg_type == PTR_TO_CTX ||
-				    insn->imm == PTR_TO_CTX)) {
+				    *prev_src_type == PTR_TO_CTX)) {
 				/* ABuser program is trying to use the same insn
 				 * dst_reg = *(u32*) (src_reg + off)
 				 * with different pointer types:
@@ -1830,7 +1837,7 @@ static int do_check(struct verifier_env *env)
 			}
 
 		} else if (class == BPF_STX) {
-			enum bpf_reg_type dst_reg_type;
+			enum bpf_reg_type *prev_dst_type, dst_reg_type;
 
 			if (BPF_MODE(insn->code) == BPF_XADD) {
 				err = check_xadd(env, insn);
@@ -1858,11 +1865,13 @@ static int do_check(struct verifier_env *env)
 			if (err)
 				return err;
 
-			if (insn->imm == 0) {
-				insn->imm = dst_reg_type;
-			} else if (dst_reg_type != insn->imm &&
+			prev_dst_type = &env->insn_aux_data[insn_idx].ptr_type;
+
+			if (*prev_dst_type == NOT_INIT) {
+				*prev_dst_type = dst_reg_type;
+			} else if (dst_reg_type != *prev_dst_type &&
 				   (dst_reg_type == PTR_TO_CTX ||
-				    insn->imm == PTR_TO_CTX)) {
+				    *prev_dst_type == PTR_TO_CTX)) {
 				verbose("same insn cannot be used with different pointers\n");
 				return -EINVAL;
 			}
@@ -2119,17 +2128,18 @@ static void adjust_branches(struct bpf_prog *prog, int pos, int delta)
 static int convert_ctx_accesses(struct verifier_env *env)
 {
 	struct bpf_insn *insn = env->prog->insnsi;
-	int insn_cnt = env->prog->len;
+	const int insn_cnt = env->prog->len;
 	struct bpf_insn insn_buf[16];
 	struct bpf_prog *new_prog;
-	u32 cnt;
-	int i;
 	enum bpf_access_type type;
+	int i, delta = 0;
 
 	if (!env->prog->aux->ops->convert_ctx_access)
 		return 0;
 
 	for (i = 0; i < insn_cnt; i++, insn++) {
+		u32 cnt;
+
 		if (insn->code == (BPF_LDX | BPF_MEM | BPF_W))
 			type = BPF_READ;
 		else if (insn->code == (BPF_STX | BPF_MEM | BPF_W))
@@ -2137,11 +2147,8 @@ static int convert_ctx_accesses(struct verifier_env *env)
 		else
 			continue;
 
-		if (insn->imm != PTR_TO_CTX) {
-			/* clear internal mark */
-			insn->imm = 0;
+		if (env->insn_aux_data[i].ptr_type != PTR_TO_CTX)
 			continue;
-		}
 
 		cnt = env->prog->aux->ops->
 			convert_ctx_access(type, insn->dst_reg, insn->src_reg,
@@ -2151,34 +2158,16 @@ static int convert_ctx_accesses(struct verifier_env *env)
 			return -EINVAL;
 		}
 
-		if (cnt == 1) {
-			memcpy(insn, insn_buf, sizeof(*insn));
-			continue;
-		}
-
-		/* several new insns need to be inserted. Make room for them */
-		insn_cnt += cnt - 1;
-		new_prog = bpf_prog_realloc(env->prog,
-					    bpf_prog_size(insn_cnt),
-					    GFP_USER);
+		new_prog = bpf_patch_insn_single(env->prog, i + delta, insn_buf,
+						 cnt);
 		if (!new_prog)
 			return -ENOMEM;
 
-		new_prog->len = insn_cnt;
-
-		memmove(new_prog->insnsi + i + cnt, new_prog->insns + i + 1,
-			sizeof(*insn) * (insn_cnt - i - cnt));
-
-		/* copy substitute insns in place of load instruction */
-		memcpy(new_prog->insnsi + i, insn_buf, sizeof(*insn) * cnt);
-
-		/* adjust branches in the whole program */
-		adjust_branches(new_prog, i, cnt - 1);
+		delta += cnt - 1;
 
 		/* keep walking new program and skip insns we just inserted */
 		env->prog = new_prog;
-		insn = new_prog->insnsi + i + cnt - 1;
-		i += cnt - 1;
+		insn      = new_prog->insnsi + i + delta;
 	}
 
 	return 0;
@@ -2222,6 +2211,11 @@ int bpf_check(struct bpf_prog **prog, union bpf_attr *attr)
 	if (!env)
 		return -ENOMEM;
 
+	env->insn_aux_data = vzalloc(sizeof(struct bpf_insn_aux_data) *
+				     (*prog)->len);
+	ret = -ENOMEM;
+	if (!env->insn_aux_data)
+		goto err_free_env;
 	env->prog = *prog;
 
 	/* grab the mutex to protect few globals used by verifier */
@@ -2240,12 +2234,12 @@ int bpf_check(struct bpf_prog **prog, union bpf_attr *attr)
 		/* log_* values have to be sane */
 		if (log_size < 128 || log_size > UINT_MAX >> 8 ||
 		    log_level == 0 || log_ubuf == NULL)
-			goto free_env;
+			goto err_unlock;
 
 		ret = -ENOMEM;
 		log_buf = vmalloc(log_size);
 		if (!log_buf)
-			goto free_env;
+			goto err_unlock;
 	} else {
 		log_level = 0;
 	}
@@ -2314,14 +2308,16 @@ skip_full_check:
 free_log_buf:
 	if (log_level)
 		vfree(log_buf);
-free_env:
 	if (!env->prog->aux->used_maps)
 		/* if we didn't copy map pointers into bpf_prog_info, release
 		 * them now. Otherwise free_bpf_prog_info() will release them.
 		 */
 		release_maps(env);
 	*prog = env->prog;
-	kfree(env);
+err_unlock:
 	mutex_unlock(&bpf_verifier_lock);
+	vfree(env->insn_aux_data);
+err_free_env:
+	kfree(env);
 	return ret;
 }
