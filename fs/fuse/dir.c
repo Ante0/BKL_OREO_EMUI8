@@ -1743,7 +1743,6 @@ static int fuse_setattr(struct dentry *entry, struct iattr *attr)
 {
 	struct inode *inode = d_inode(entry);
 	struct file *file = (attr->ia_valid & ATTR_FILE) ? attr->ia_file : NULL;
-
 	int ret;
 
 	if (!fuse_allow_current_process(get_fuse_conn(inode)))
@@ -1777,7 +1776,6 @@ static int fuse_setattr(struct dentry *entry, struct iattr *attr)
 		return 0;
 
 	ret = fuse_do_setattr(inode, attr, file);
-
 	if (!ret) {
 		/* Directory mode changed, may need to revalidate access */
 		if (d_is_dir(entry) && (attr->ia_valid & ATTR_MODE))
