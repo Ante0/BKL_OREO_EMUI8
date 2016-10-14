@@ -340,7 +340,40 @@ void zfcp_dbf_san(char *tag, struct zfcp_dbf *dbf, void *data, u8 id, u16 len,
 	rec_len = min(len, (u16)ZFCP_DBF_SAN_MAX_PAYLOAD);
 	memcpy(rec->payload, data, rec_len);
 	memcpy(rec->tag, tag, ZFCP_DBF_TAG_LEN);
+	rec->pl_len = len; /* full length even if we cap pay below */
+	if (!sg)
+		goto out;
+	rec_len = min_t(unsigned int, sg->length, ZFCP_DBF_SAN_MAX_PAYLOAD);
+	memcpy(rec->payload, sg_virt(sg), rec_len); /* part of 1st sg entry */
+	if (len <= rec_len)
+		goto out; /* skip pay record if full content in rec->payload */
 
+	/* if (len > rec_len):
+	 * dump data up to cap_len ignoring small duplicate in rec->payload
+	 */
+	spin_lock(&dbf->pay_lock);
+	memset(payload, 0, sizeof(*payload));
+	memcpy(payload->area, paytag, ZFCP_DBF_TAG_LEN);
+	payload->fsf_req_id = req_id;
+	payload->counter = 0;
+	for (; sg && pay_sum < cap_len; sg = sg_next(sg)) {
+		u16 pay_len, offset = 0;
+
+		while (offset < sg->length && pay_sum < cap_len) {
+			pay_len = min((u16)ZFCP_DBF_PAY_MAX_REC,
+				      (u16)(sg->length - offset));
+			/* cap_len <= pay_sum < cap_len+ZFCP_DBF_PAY_MAX_REC */
+			memcpy(payload->data, sg_virt(sg) + offset, pay_len);
+			debug_event(dbf->pay, 1, payload,
+				    zfcp_dbf_plen(pay_len));
+			payload->counter++;
+			offset += pay_len;
+			pay_sum += pay_len;
+		}
+	}
+	spin_unlock(&dbf->pay_lock);
+
+out:
 	debug_event(dbf->san, 1, rec, sizeof(*rec));
 	spin_unlock_irqrestore(&dbf->san_lock, flags);
 }
