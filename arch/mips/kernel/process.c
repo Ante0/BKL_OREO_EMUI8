@@ -282,7 +282,6 @@ static inline int is_jump_ins(union mips_instruction *ip)
 	 *
 	 * microMIPS is kind of more fun...
 	 */
-<<<<<<< HEAD
 	if (mm_insn_16bit(ip->halfword[1])) {
 		if ((ip->mm16_r5_format.opcode == mm_pool16c_op &&
 		    (ip->mm16_r5_format.rt & mm_jr16_op) == mm_jr16_op))
@@ -293,11 +292,6 @@ static inline int is_jump_ins(union mips_instruction *ip)
 	if (ip->j_format.opcode == mm_j32_op)
 		return 1;
 	if (ip->j_format.opcode == mm_jal32_op)
-=======
-	if ((ip->mm16_r5_format.opcode == mm_pool16c_op &&
-	    (ip->mm16_r5_format.rt & mm_jr16_op) == mm_jr16_op) ||
-	    ip->j_format.opcode == mm_jal32_op)
->>>>>>> 2998bf60d385... MIPS: Prevent unaligned accesses during stack unwinding
 		return 1;
 	if (ip->r_format.opcode != mm_pool32a_op ||
 			ip->r_format.func != mm_pool32axf_op)
@@ -347,15 +341,9 @@ static inline int is_sp_move_ins(union mips_instruction *ip)
 static int get_frame_info(struct mips_frame_info *info)
 {
 	bool is_mmips = IS_ENABLED(CONFIG_CPU_MICROMIPS);
-<<<<<<< HEAD
 	union mips_instruction insn, *ip, *ip_end;
 	const unsigned int max_insns = 128;
 	unsigned int i;
-=======
-	union mips_instruction insn, *ip;
-	unsigned max_insns = info->func_size / sizeof(union mips_instruction);
-	unsigned i;
->>>>>>> 2998bf60d385... MIPS: Prevent unaligned accesses during stack unwinding
 
 	info->pc_offset = -1;
 	info->frame_size = 0;
@@ -366,11 +354,7 @@ static int get_frame_info(struct mips_frame_info *info)
 
 	ip_end = (void *)ip + info->func_size;
 
-<<<<<<< HEAD
 	for (i = 0; i < max_insns && ip < ip_end; i++, ip++) {
-=======
-	for (i = 0; i < max_insns; i++, ip++) {
->>>>>>> 2998bf60d385... MIPS: Prevent unaligned accesses during stack unwinding
 		if (is_mmips && mm_insn_16bit(ip->halfword[0])) {
 			insn.halfword[0] = 0;
 			insn.halfword[1] = ip->halfword[0];
@@ -408,15 +392,9 @@ static int get_frame_info(struct mips_frame_info *info)
 			}
 			continue;
 		}
-<<<<<<< HEAD
 
 		if (info->pc_offset == -1 &&
 		    is_ra_save_ins(&insn, &info->pc_offset))
-=======
-		if (info->pc_offset == -1 && is_ra_save_ins(&insn)) {
-			info->pc_offset =
-				ip->i_format.simmediate / sizeof(long);
->>>>>>> 2998bf60d385... MIPS: Prevent unaligned accesses during stack unwinding
 			break;
 	}
 	if (info->frame_size && info->pc_offset >= 0) /* nested */
