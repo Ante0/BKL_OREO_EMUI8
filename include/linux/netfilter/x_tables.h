@@ -364,6 +364,10 @@ static inline unsigned long ifname_compare_aligned(const char *_a,
 	return ret;
 }
 
+struct xt_percpu_counter_alloc_state {
+	unsigned int off;
+	const char __percpu *mem;
+};
 
 /* On SMP, ip(6)t_entry->counters.pcnt holds address of the
  * real (percpu) counter.  On !SMP, its just the packet count,
@@ -391,6 +395,9 @@ static inline u64 xt_percpu_counter_alloc(void)
 
 	return 0;
 }
+bool xt_percpu_counter_alloc(struct xt_percpu_counter_alloc_state *state,
+			     struct xt_counters *counter);
+
 void xt_percpu_counter_free(struct xt_counters *cnt);
 
 static inline struct xt_counters *
