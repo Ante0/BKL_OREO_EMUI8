@@ -1637,6 +1637,9 @@ static int nvme_disable_ctrl(struct nvme_dev *dev, u64 cap)
 	dev->ctrl_config &= ~NVME_CC_ENABLE;
 	writel(dev->ctrl_config, &dev->bar->cc);
 
+	if (pdev->vendor == 0x1c58 && pdev->device == 0x0003)
+		msleep(NVME_QUIRK_DELAY_AMOUNT);
+
 	return nvme_wait_ready(dev, cap, false);
 }
 
