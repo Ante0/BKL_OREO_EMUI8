@@ -1014,3 +1014,4 @@ static const struct ufs_hba_variant_ops ufs_hba_qcom_vops = {
 	.resume			= ufs_qcom_resume,
 };
 EXPORT_SYMBOL(ufs_hba_qcom_vops);
+
