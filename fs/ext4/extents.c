@@ -5419,6 +5419,7 @@ ext4_ext_shift_extents(struct inode *inode, handle_t *handle,
 	 * in case of right shift if extent with 0 block is reached, iterator
 	 * becomes NULL to indicate the end of the loop.
 	 */
+	while (iterator && start <= stop) {
 		path = ext4_find_extent(inode, *iterator, &path,
 					EXT4_EX_NOCACHE);
 		if (IS_ERR(path))
