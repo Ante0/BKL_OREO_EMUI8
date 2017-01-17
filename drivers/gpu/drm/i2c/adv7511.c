@@ -36,7 +36,10 @@ struct adv7511 {
 	bool edid_read;
 
 	wait_queue_head_t wq;
+	struct work_struct hpd_work;
+
 	struct drm_encoder *encoder;
+	struct drm_connector connector;
 
 	bool embedded_sync;
 	enum adv7511_sync_polarity vsync_polarity;
@@ -470,7 +473,7 @@ static int adv7511_irq_process(struct adv7511 *adv7511, bool process_hpd)
 	regmap_write(adv7511->regmap, ADV7511_REG_INT(1), irq1);
 
 	if (process_hpd && irq0 & ADV7511_INT0_HDP && adv7511->encoder)
-		drm_helper_hpd_irq_event(adv7511->encoder->dev);
+		schedule_work(&adv7511->hpd_work);
 
 	if (irq0 & ADV7511_INT0_EDID_READY || irq1 & ADV7511_INT1_DDC_ERROR) {
 		adv7511->edid_read = true;
