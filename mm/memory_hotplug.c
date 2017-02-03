@@ -1416,7 +1416,6 @@ int test_pages_in_a_zone(unsigned long start_pfn, unsigned long end_pfn,
 		return 1;
 	} else {
 		return 0;
-	}
 }
 
 /*
