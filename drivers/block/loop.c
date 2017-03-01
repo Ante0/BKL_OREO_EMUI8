@@ -1181,6 +1181,7 @@ loop_set_status(struct loop_device *lo, const struct loop_info64 *info)
 		lo->lo_disk->flags &= ~GENHD_FL_NO_PART_SCAN;
 		loop_reread_partitions(lo, lo->lo_device);
 	}
+
 	return err;
 }
 
