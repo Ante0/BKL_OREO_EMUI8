@@ -1073,8 +1073,21 @@ static int core_alua_do_transition_tg_pt(
 	/*
 	 * Flush any pending transitions
 	 */
+<<<<<<< HEAD
 	if (!explicit)
 		flush_work(&tg_pt_gp->tg_pt_gp_transition_work);
+=======
+	if (!explicit && atomic_read(&tg_pt_gp->tg_pt_gp_alua_access_state) ==
+	    ALUA_ACCESS_STATE_TRANSITION) {
+		/* Just in case */
+		tg_pt_gp->tg_pt_gp_alua_pending_state = new_state;
+		tg_pt_gp->tg_pt_gp_transition_complete = &wait;
+		flush_work(&tg_pt_gp->tg_pt_gp_transition_work);
+		wait_for_completion(&wait);
+		tg_pt_gp->tg_pt_gp_transition_complete = NULL;
+		return 0;
+	}
+>>>>>>> dfd6deed8313... target: fix ALUA transition timeout handling
 
 	/*
 	 * Save the old primary ALUA access state, and set the current state
