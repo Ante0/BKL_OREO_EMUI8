@@ -1891,8 +1891,10 @@ err_out:
 err:
 	if (err)
 		kmem_cache_free(free_nid_slab, i);
+
 	if (is_sbi_flag_set(sbi, SBI_NEED_FSCK))
 		set_extra_flag(sbi, EXTRA_NEED_FSCK_FLAG);
+
 	return ret;
 }
 
