@@ -1953,6 +1953,7 @@ abort_transaction_no_dev_fatal:
 	kfree(info->queues);
 	info->queues = NULL;
  out:
+	device_unregister(&dev->dev);
 	return err;
 }
 
