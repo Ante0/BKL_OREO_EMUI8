@@ -834,7 +834,12 @@ void kvm_free_stage2_pgd(struct kvm *kvm)
 		return;
 
 	spin_lock(&kvm->mmu_lock);
-	unmap_stage2_range(kvm, 0, KVM_PHYS_SIZE);
+	if (kvm->arch.pgd) {
+		unmap_stage2_range(kvm, 0, KVM_PHYS_SIZE);
+		pgd = READ_ONCE(kvm->arch.pgd);
+		hwpgd = kvm_get_hwpgd(kvm);
+		kvm->arch.pgd = NULL;
+	}
 	spin_unlock(&kvm->mmu_lock);
 
 	kvm_free_hwpgd(kvm_get_hwpgd(kvm));
