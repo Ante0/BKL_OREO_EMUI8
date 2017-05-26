@@ -1826,21 +1826,10 @@ static int intel_pt_walk_to_ip(struct intel_pt_decoder *decoder)
 			break;
 
 		case INTEL_PT_FUP:
-<<<<<<< HEAD
 			if (intel_pt_have_ip(decoder))
 				intel_pt_set_ip(decoder);
 			if (decoder->ip)
 				return 0;
-=======
-			if (decoder->overflow) {
-				if (intel_pt_have_ip(decoder))
-					intel_pt_set_ip(decoder);
-				if (decoder->ip)
-					return 0;
-			}
-			if (decoder->packet.count && decoder->have_last_ip)
-				intel_pt_set_last_ip(decoder);
->>>>>>> 33f3bc42fc23... perf intel-pt: Fix last_ip usage
 			break;
 
 		case INTEL_PT_MTC:
