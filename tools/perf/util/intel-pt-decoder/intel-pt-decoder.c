@@ -1412,7 +1412,8 @@ static int intel_pt_walk_psbend(struct intel_pt_decoder *decoder)
 
 		case INTEL_PT_FUP:
 			decoder->pge = true;
-			intel_pt_set_last_ip(decoder);
+			if (decoder->packet.count)
+				intel_pt_set_last_ip(decoder);
 			break;
 
 		case INTEL_PT_MODE_TSX:
@@ -1696,8 +1697,9 @@ next:
 
 static inline bool intel_pt_have_ip(struct intel_pt_decoder *decoder)
 {
-	return decoder->last_ip || decoder->packet.count == 0 ||
-	       decoder->packet.count == 3 || decoder->packet.count == 6;
+	return decoder->packet.count &&
+	       (decoder->have_last_ip || decoder->packet.count == 3 ||
+		decoder->packet.count == 6);
 }
 
 /* Walk PSB+ packets to get in sync. */
