@@ -178,26 +178,6 @@ static void ravb_ring_free(struct net_device *ndev, int q)
 	int ring_size;
 	int i;
 
-	/* Free RX skb ringbuffer */
-	if (priv->rx_skb[q]) {
-		for (i = 0; i < priv->num_rx_ring[q]; i++)
-			dev_kfree_skb(priv->rx_skb[q][i]);
-	}
-	kfree(priv->rx_skb[q]);
-	priv->rx_skb[q] = NULL;
-
-	/* Free TX skb ringbuffer */
-	if (priv->tx_skb[q]) {
-		for (i = 0; i < priv->num_tx_ring[q]; i++)
-			dev_kfree_skb(priv->tx_skb[q][i]);
-	}
-	kfree(priv->tx_skb[q]);
-	priv->tx_skb[q] = NULL;
-
-	/* Free aligned TX buffers */
-	kfree(priv->tx_align[q]);
-	priv->tx_align[q] = NULL;
-
 	if (priv->rx_ring[q]) {
 		ring_size = sizeof(struct ravb_ex_rx_desc) *
 			    (priv->num_rx_ring[q] + 1);
@@ -213,6 +193,24 @@ static void ravb_ring_free(struct net_device *ndev, int q)
 				  priv->tx_desc_dma[q]);
 		priv->tx_ring[q] = NULL;
 	}
+
+	/* Free RX skb ringbuffer */
+	if (priv->rx_skb[q]) {
+		for (i = 0; i < priv->num_rx_ring[q]; i++)
+			dev_kfree_skb(priv->rx_skb[q][i]);
+	}
+	kfree(priv->rx_skb[q]);
+	priv->rx_skb[q] = NULL;
+
+	/* Free aligned TX buffers */
+	kfree(priv->tx_align[q]);
+	priv->tx_align[q] = NULL;
+
+	/* Free TX skb ringbuffer.
+	 * SKBs are freed by ravb_tx_free() call above.
+	 */
+	kfree(priv->tx_skb[q]);
+	priv->tx_skb[q] = NULL;
 }
 
 /* Format skb and descriptor buffer for Ethernet AVB */
