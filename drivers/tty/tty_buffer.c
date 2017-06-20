@@ -375,7 +375,7 @@ int __tty_insert_flip_char(struct tty_port *port, unsigned char ch, char flag)
 	struct tty_buffer *tb;
 	int flags = (flag == TTY_NORMAL) ? TTYB_NORMAL : 0;
 
-	if (!tty_buffer_request_room(port, 1))
+	if (!__tty_buffer_request_room(port, 1, flags))
 		return 0;
 
 	tb = port->buf.tail;
