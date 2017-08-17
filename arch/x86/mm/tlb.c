@@ -6,13 +6,14 @@
 #include <linux/interrupt.h>
 #include <linux/module.h>
 #include <linux/cpu.h>
+#include <linux/debugfs.h>
 
 #include <asm/tlbflush.h>
 #include <asm/mmu_context.h>
 #include <asm/cache.h>
 #include <asm/apic.h>
 #include <asm/uv/uv.h>
-#include <linux/debugfs.h>
+#include <asm/kaiser.h>
 
 /*
  *	Smarter SMP flushing macros.
@@ -35,6 +36,35 @@ struct flush_tlb_info {
 	unsigned long flush_start;
 	unsigned long flush_end;
 };
+
+static void load_new_mm_cr3(pgd_t *pgdir)
+{
+	unsigned long new_mm_cr3 = __pa(pgdir);
+
+#ifdef CONFIG_KAISER
+	if (this_cpu_has(X86_FEATURE_PCID)) {
+		/*
+		 * We reuse the same PCID for different tasks, so we must
+		 * flush all the entries for the PCID out when we change tasks.
+		 * Flush KERN below, flush USER when returning to userspace in
+		 * kaiser's SWITCH_USER_CR3 (_SWITCH_TO_USER_CR3) macro.
+		 *
+		 * invpcid_flush_single_context(X86_CR3_PCID_ASID_USER) could
+		 * do it here, but can only be used if X86_FEATURE_INVPCID is
+		 * available - and many machines support pcid without invpcid.
+		 */
+		new_mm_cr3 |= X86_CR3_PCID_KERN_FLUSH;
+		kaiser_flush_tlb_on_return_to_user();
+	}
+#endif /* CONFIG_KAISER */
+
+	/*
+	 * Caution: many callers of this function expect
+	 * that load_cr3() is serializing and orders TLB
+	 * fills with respect to the mm_cpumask writes.
+	 */
+	write_cr3(new_mm_cr3);
+}
 
 /*
  * We cannot call mmdrop() because we are in interrupt context,

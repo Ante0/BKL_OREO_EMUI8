@@ -27,9 +27,13 @@ movq \reg, %cr3
 
 .macro _SWITCH_TO_USER_CR3 reg
 movq %cr3, \reg
-#ifdef CONFIG_KAISER_REAL_SWITCH
-orq $(KAISER_SHADOW_PGD_OFFSET), \reg
-#endif
+andq $(~(X86_CR3_PCID_ASID_MASK | KAISER_SHADOW_PGD_OFFSET)), \reg
+orq  PER_CPU_VAR(X86_CR3_PCID_USER_VAR), \reg
+js   9f
+// FLUSH this time, reset to NOFLUSH for next time
+// But if nopcid?  Consider using 0x80 for user pcid?
+movb $(0x80), PER_CPU_VAR(X86_CR3_PCID_USER_VAR+7)
+9:
 movq \reg, %cr3
 .endm
 
@@ -85,6 +89,11 @@ movq PER_CPU_VAR(unsafe_stack_register_backup), %rax
 */
 
 DECLARE_PER_CPU_USER_MAPPED(unsigned long, unsafe_stack_register_backup);
+
+extern unsigned long X86_CR3_PCID_KERN_VAR;
+DECLARE_PER_CPU(unsigned long, X86_CR3_PCID_USER_VAR);
+
+extern char __per_cpu_user_mapped_start[], __per_cpu_user_mapped_end[];
 
 /**
  *  kaiser_add_mapping - map a virtual memory part to the shadow (user) mapping
