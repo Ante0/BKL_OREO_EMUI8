@@ -285,6 +285,7 @@ static void usbhsf_fifo_clear(struct usbhs_pipe *pipe,
 			      struct usbhs_fifo *fifo)
 {
 	struct usbhs_priv *priv = usbhs_pipe_to_priv(pipe);
+	int ret = 0;
 
 	if (!usbhs_pipe_is_dcp(pipe)) {
 		/*
@@ -298,7 +299,12 @@ static void usbhsf_fifo_clear(struct usbhs_pipe *pipe,
 			ret = usbhsf_fifo_barrier(priv, fifo);
 	}
 
-	usbhs_write(priv, fifo->ctr, BCLR);
+	/*
+	 * if non-DCP pipe, this driver should set BCLR when
+	 * usbhsf_fifo_barrier() returns 0.
+	 */
+	if (!ret)
+		usbhs_write(priv, fifo->ctr, BCLR);
 }
 
 static int usbhsf_fifo_rcv_len(struct usbhs_priv *priv,
