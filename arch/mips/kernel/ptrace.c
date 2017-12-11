@@ -476,6 +476,7 @@ static int fpr_get_msa(struct task_struct *target,
 	}
 	return 0;
 }
+
 /*
  * Copy the floating-point context to the supplied NT_PRFPREG buffer.
  * Choose the appropriate helper for general registers, and then copy
@@ -488,6 +489,7 @@ static int fpr_get(struct task_struct *target,
 {
 	const int fcr31_pos = NUM_FPU_REGS * sizeof(elf_fpreg_t);
 	int err;
+
 	if (sizeof(target->thread.fpu.fpr[0]) == sizeof(elf_fpreg_t))
 		err = fpr_get_fpa(target, &pos, &count, &kbuf, &ubuf);
 	else
@@ -497,6 +499,7 @@ static int fpr_get(struct task_struct *target,
 	err = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
 				  &target->thread.fpu.fcr31,
 				  fcr31_pos, fcr31_pos + sizeof(u32));
+
 	return err;
 }
 /*
@@ -557,8 +560,10 @@ static int fpr_set(struct task_struct *target,
 	u32 fcr31;
 	int err;
 	BUG_ON(count % sizeof(elf_fpreg_t));
+
 	if (pos + count > sizeof(elf_fpregset_t))
 		return -EIO;
+
 	init_fp_ctx(target);
 	if (sizeof(target->thread.fpu.fpr[0]) == sizeof(elf_fpreg_t))
 		err = fpr_set_fpa(target, &pos, &count, &kbuf, &ubuf);
@@ -566,14 +571,17 @@ static int fpr_set(struct task_struct *target,
 		err = fpr_set_msa(target, &pos, &count, &kbuf, &ubuf);
 	if (err)
 		return err;
+
 	if (count > 0) {
 		err = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
 					 &fcr31,
 					 fcr31_pos, fcr31_pos + sizeof(u32));
 		if (err)
 			return err;
+
 		ptrace_setfcr31(target, fcr31);
 	}
+
 	return err;
 }
 
