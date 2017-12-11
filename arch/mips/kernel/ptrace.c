@@ -465,6 +465,7 @@ static int fpr_get_msa(struct task_struct *target,
 	unsigned int i;
 	u64 fpr_val;
 	int err;
+
 	BUILD_BUG_ON(sizeof(fpr_val) != sizeof(elf_fpreg_t));
 	for (i = 0; i < NUM_FPU_REGS; i++) {
 		fpr_val = get_fpr64(&target->thread.fpu.fpr[i], 0);
