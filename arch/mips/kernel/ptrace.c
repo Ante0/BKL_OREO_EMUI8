@@ -467,34 +467,44 @@ static int fpr_get(struct task_struct *target,
 	return 0;
 }
 
+/*
+ * Copy the supplied NT_PRFPREG buffer to the floating-point context.
+ * Choose the appropriate helper for general registers, and then copy
+ * the FCSR register separately.
+ *
+ * We optimize for the case where `count % sizeof(elf_fpreg_t) == 0',
+ * which is supposed to have been guaranteed by the kernel before
+ * calling us, e.g. in `ptrace_regset'.  We enforce that requirement,
+ * so that we can safely avoid preinitializing temporaries for
+ * partial register writes.
+ */
 static int fpr_set(struct task_struct *target,
 		   const struct user_regset *regset,
 		   unsigned int pos, unsigned int count,
 		   const void *kbuf, const void __user *ubuf)
 {
-	unsigned i;
+	const int fcr31_pos = NUM_FPU_REGS * sizeof(elf_fpreg_t);
+	u32 fcr31;
 	int err;
-	u64 fpr_val;
-
-	/* XXX fcr31  */
-
+	BUG_ON(count % sizeof(elf_fpreg_t));
+	if (pos + count > sizeof(elf_fpregset_t))
+		return -EIO;
 	init_fp_ctx(target);
-
-	if (sizeof(target->thread.fpu.fpr[i]) == sizeof(elf_fpreg_t))
-		return user_regset_copyin(&pos, &count, &kbuf, &ubuf,
-					  &target->thread.fpu,
-					  0, sizeof(elf_fpregset_t));
-
-	for (i = 0; i < NUM_FPU_REGS; i++) {
+	if (sizeof(target->thread.fpu.fpr[0]) == sizeof(elf_fpreg_t))
+		err = fpr_set_fpa(target, &pos, &count, &kbuf, &ubuf);
+	else
+		err = fpr_set_msa(target, &pos, &count, &kbuf, &ubuf);
+	if (err)
+		return err;
+	if (count > 0) {
 		err = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
-					 &fpr_val, i * sizeof(elf_fpreg_t),
-					 (i + 1) * sizeof(elf_fpreg_t));
+					 &fcr31,
+					 fcr31_pos, fcr31_pos + sizeof(u32));
 		if (err)
 			return err;
-		set_fpr64(&target->thread.fpu.fpr[i], 0, fpr_val);
+		ptrace_setfcr31(target, fcr31);
 	}
-
-	return 0;
+	return err;
 }
 
 enum mips_regset {
