@@ -316,8 +316,7 @@ void __init kaiser_init(void)
 {
 	int cpu;
 
-	if (!kaiser_enabled) {
-		setup_clear_cpu_cap(X86_FEATURE_KAISER);
+	if (!kaiser_enabled)
 		return;
 	}
 
