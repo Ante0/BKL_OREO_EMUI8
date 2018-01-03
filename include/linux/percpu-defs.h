@@ -35,6 +35,12 @@
 
 #endif
 
+#ifdef CONFIG_PAGE_TABLE_ISOLATION
+#define USER_MAPPED_SECTION "..user_mapped"
+#else
+#define USER_MAPPED_SECTION ""
+#endif
+
 /*
  * Base implementations of per-CPU variable declarations and definitions, where
  * the section in which the variable is to be placed is provided by the
