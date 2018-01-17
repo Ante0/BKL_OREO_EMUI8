@@ -148,5 +148,38 @@
 # define THUNK_TARGET(addr) [thunk_target] "rm" (addr)
 #endif
 
+/* The Spectre V2 mitigation variants */
+enum spectre_v2_mitigation {
+	SPECTRE_V2_NONE,
+	SPECTRE_V2_RETPOLINE_MINIMAL,
+	SPECTRE_V2_RETPOLINE_MINIMAL_AMD,
+	SPECTRE_V2_RETPOLINE_GENERIC,
+	SPECTRE_V2_RETPOLINE_AMD,
+	SPECTRE_V2_IBRS,
+};
+
+extern char __indirect_thunk_start[];
+extern char __indirect_thunk_end[];
+
+/*
+ * On VMEXIT we must ensure that no RSB predictions learned in the guest
+ * can be followed in the host, by overwriting the RSB completely. Both
+ * retpoline and IBRS mitigations for Spectre v2 need this; only on future
+ * CPUs with IBRS_ATT *might* it be avoided.
+ */
+static inline void vmexit_fill_RSB(void)
+{
+#ifdef CONFIG_RETPOLINE
+	unsigned long loops;
+
+	asm volatile (ALTERNATIVE("jmp 910f",
+				  __stringify(__FILL_RETURN_BUFFER(%0, RSB_CLEAR_LOOPS, %1)),
+				  X86_FEATURE_RETPOLINE)
+		      "910:"
+		      : "=r" (loops), ASM_CALL_CONSTRAINT
+		      : : "memory" );
+#endif
+}
+
 #endif /* __ASSEMBLY__ */
 #endif /* __NOSPEC_BRANCH_H__ */
