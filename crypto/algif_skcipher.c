@@ -1,4 +1,4 @@
-f/*
+/*
  * algif_skcipher: User-space interface for skcipher algorithms
  *
  * This file provides the user-space API for symmetric key ciphers.
@@ -650,19 +650,12 @@ static int skcipher_recvmsg_sync(struct socket *sock, struct msghdr *msg,
 	long copied = 0;
 
 	lock_sock(sk);
-
-	for (iov = msg->msg_iov, iovlen = msg->msg_iovlen; iovlen > 0;
-	     iovlen--, iov++) {
-		unsigned long seglen = iov->iov_len;
-		char __user *from = iov->iov_base;
-
-		while (seglen) {
-			used = ctx->used;
-			if (!used) {
-				err = skcipher_wait_for_data(sk, flags);
-				if (err)
-					goto unlock;
-			}
+	while (msg_data_left(msg)) {
+		if (!ctx->used) {
+			err = skcipher_wait_for_data(sk, flags);
+			if (err)
+				goto unlock;
+		}
 
 		used = min_t(unsigned long, ctx->used, msg_data_left(msg));
 
@@ -685,16 +678,8 @@ static int skcipher_recvmsg_sync(struct socket *sock, struct msghdr *msg,
 		while (!sg->length)
 			sg++;
 
-			sgl = list_first_entry(&ctx->tsgl,
-					       struct skcipher_sg_list, list);
-			sg = sgl->sg;
-
-			while (!sg->length)
-				sg++;
-
-			ablkcipher_request_set_crypt(&ctx->req, sg,
-						     ctx->rsgl.sg, used,
-						     ctx->iv);
+		skcipher_request_set_crypt(&ctx->req, sg, ctx->rsgl.sg, used,
+					   ctx->iv);
 
 		err = af_alg_wait_for_completion(
 				ctx->enc ?
