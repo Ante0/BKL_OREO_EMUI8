@@ -1,9 +1,3 @@
 #!/bin/bash
-cp out/arch/arm64/boot/Image.gz tools/kernel
-cd tools/
-./pack_kernerimage_cmd.sh
-mv kernel.img ../kernel.img
-rm kernel
-cd ../
-echo "kernel.img created in:"
-realpath kernel.img
+./mkbootimg --kernel out/arch/arm64/boot/Image.gz --base 0x0 --cmdline "loglevel=4 initcall_debug=n page_tracker=on unmovable_isolate1=2:192M,3:224M,4:256M printktimer=0xfff0a000,0x534,0x538 androidboot.selinux=enforcing buildvariant=user" --tags_offset 0x07A00000 --kernel_offset 0x00080000 --ramdisk_offset 0x07c00000 --os_version 8.0.0 --os_patch_level $1  --output BKL_KERNEL_$1.img
+echo "kernel image created"
