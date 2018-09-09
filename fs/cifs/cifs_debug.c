@@ -30,6 +30,7 @@
 #include "cifsproto.h"
 #include "cifs_debug.h"
 #include "cifsfs.h"
+#include <linux/kernel.h>
 
 void
 cifs_dump_mem(char *label, void *data, int length)
@@ -475,7 +476,7 @@ static ssize_t cifs_linux_ext_proc_write(struct file *file,
 	rc = kstrtobool_from_user(buffer, count, &linuxExtEnabled);
 	if (rc)
 		return rc;
-
+		
 	return count;
 }
 
