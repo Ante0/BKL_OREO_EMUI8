@@ -325,7 +325,7 @@ enum FW_uptate_state {
 };
 #endif
 enum ts_gesture_num {
-/*      TS_NUM_TOTAL = 12, /* total gesture numbers  */
+/*  	TS_NUM_TOTAL = 12,  total gesture numbers  */
 	TS_DOUBLE_CLICK = KEY_F1,	/*0.Double tap:KEY_F1 */
 	TS_SLIDE_L2R = KEY_F2,	/*1.Single finger slide from left to right:KEY_F2 */
 	TS_SLIDE_R2L = KEY_F3,	/*2.Single finger slide from right to left:KEY_F3 */
