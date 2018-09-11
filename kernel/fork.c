@@ -720,12 +720,11 @@ void __mmdrop(struct mm_struct *mm)
 	destroy_context(mm);
 	mmu_notifier_mm_destroy(mm);
 	check_mm(mm);
-<<<<<<< HEAD
+
 #ifdef CONFIG_BLK_DEV_THROTTLING
 	blk_throtl_io_limit_put(mm->io_limit);
 #endif
-=======
->>>>>>> 03eed7afbc09... mm: Add a user_ns owner to mm_struct and fix ptrace permission checks
+
 	put_user_ns(mm->user_ns);
 	free_mm(mm);
 }
