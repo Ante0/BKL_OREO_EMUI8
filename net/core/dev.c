@@ -1691,7 +1691,6 @@ static DECLARE_WORK(netstamp_work, netstamp_clear);
 void net_enable_timestamp(void)
 {
 	static_key_slow_inc(&netstamp_needed);
-#endif
 }
 EXPORT_SYMBOL(net_enable_timestamp);
 
