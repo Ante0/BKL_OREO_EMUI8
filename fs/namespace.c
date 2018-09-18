@@ -931,7 +931,7 @@ static void commit_tree(struct mount *mnt, struct mount *shadows)
 	n->mounts += n->pending_mounts;
 	n->pending_mounts = 0;
 
-	__attach_mnt(mnt, parent);
+	attach_shadowed(mnt, parent, shadows);
 	touch_mnt_namespace(n);
 }
 
@@ -1983,17 +1983,9 @@ static int attach_recursive_mnt(struct mount *source_mnt,
 {
 	HLIST_HEAD(tree_list);
 	struct mnt_namespace *ns = dest_mnt->mnt_ns;
-	struct mountpoint *smp;
 	struct mount *child, *p;
 	struct hlist_node *n;
 	int err;
-
-	/* Is there space to add these mounts to the mount namespace? */
-	if (!parent_path) {
-		err = count_mounts(ns, source_mnt);
-		if (err)
-			goto out;
-	}
 
 	/* Is there space to add these mounts to the mount namespace? */
 	if (!parent_path) {
@@ -2045,10 +2037,6 @@ static int attach_recursive_mnt(struct mount *source_mnt,
 	cleanup_group_ids(source_mnt, NULL);
  out:
 	ns->pending_mounts = 0;
-	read_seqlock_excl(&mount_lock);
-	put_mountpoint(smp);
-	read_sequnlock_excl(&mount_lock);
-
 	return err;
 }
 
