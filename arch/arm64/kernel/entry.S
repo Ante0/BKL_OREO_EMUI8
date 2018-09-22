@@ -461,7 +461,7 @@ el1_da:
 	/*
 	 * Data abort handling
 	 */
-	mrs	x3, far_el1
+	mrs	x0, far_el1
 	enable_dbg
 	// re-enable interrupts if they were enabled in the aborted context
 	tbnz	x23, #7, 1f			// PSR_I_BIT
