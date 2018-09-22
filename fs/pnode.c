@@ -169,19 +169,6 @@ static struct mount *propagation_next(struct mount *m,
 	}
 }
 
-static struct mount *skip_propagation_subtree(struct mount *m,
-						struct mount *origin)
-{
-	/*
-	 * Advance m such that propagation_next will not return
-	 * the slaves of m.
-	 */
-	if (!IS_MNT_NEW(m) && !list_empty(&m->mnt_slave_list))
-		m = last_slave(m);
-
-	return m;
-}
-
 static struct mount *next_group(struct mount *m, struct mount *origin)
 {
 	while (1) {
