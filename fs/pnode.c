@@ -458,15 +458,6 @@ static void __propagate_umount(struct mount *mnt)
 	}
 }
 
-static void cleanup_umount_visitations(struct list_head *visited)
-{
-	while (!list_empty(visited)) {
-		struct mount *mnt =
-			list_first_entry(visited, struct mount, mnt_umounting);
-		list_del_init(&mnt->mnt_umounting);
-	}
-}
-
 /*
  * collect all mounts that receive propagation from the mount in @list,
  * and return these additional mounts in the same list.
