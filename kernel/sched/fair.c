@@ -4580,7 +4580,6 @@ static inline long
 schedtune_task_margin(struct task_struct *task);
 
 static bool cpu_overutilized(int cpu);
-static bool cpu_halfutilized(int cpu);
 static bool need_spread_task(int cpu);
 static inline unsigned long boosted_cpu_util(int cpu);
 #else
@@ -5357,28 +5356,6 @@ static int find_new_capacity(struct energy_env *eenv,
 	return eenv->cap_idx;
 }
 
-static int find_cpu_new_capacity(int cpu, unsigned long util)
-{
-	struct sched_domain *sd;
-	const struct sched_group_energy *sge;
-	int idx;
-
-	sd = rcu_dereference(per_cpu(sd_ea, cpu));
-	if (!sd)
-		return INT_MAX;
-
-	sge = sd->groups->sge;
-
-	for (idx = 0; idx < sge->nr_cap_states; idx++)
-		if (sge->cap_states[idx].cap >= util)
-			break;
-
-	if (idx == sge->nr_cap_states)
-		idx = idx - 1;
-
-	return idx;
-}
-
 static int group_idle_state(struct sched_group *sg)
 {
 	int i, state = INT_MAX;
@@ -5808,11 +5785,6 @@ static inline bool task_fits_spare(struct task_struct *p, int cpu)
 static bool cpu_overutilized(int cpu)
 {
 	return (capacity_of(cpu) * 1024) < (cpu_util(cpu) * capacity_margin);
-}
-
-static bool cpu_halfutilized(int cpu)
-{
-	return capacity_of(cpu) < (cpu_util(cpu) * 2);
 }
 
 static bool need_spread_task(int cpu)
