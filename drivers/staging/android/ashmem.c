@@ -768,12 +768,12 @@ static long ashmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		break;
 	case ASHMEM_SET_SIZE:
 		ret = -EINVAL;
-		mutex_lock(&asma_mutex);
+		mutex_lock(&asma->lock);
 		if (!asma->file) {
 			ret = 0;
 			asma->size = (size_t)arg;
 		}
-		mutex_unlock(&asma_mutex);
+		mutex_unlock(&asma->lock);
 		break;
 	case ASHMEM_GET_SIZE:
 		ret = asma->size;
